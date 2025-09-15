@@ -1,6 +1,18 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { JSX, useEffect, useRef, useState } from "react";
 
-function humanFileSize(size) {
+/* types */
+type FileItem = {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  isImage: boolean;
+};
+
+/* helper to format bytes -> human readable */
+function humanFileSize(size: number) {
   if (size === 0) return "0 B";
   if (!size && size !== 0) return "";
   const i = Math.floor(Math.log(size) / Math.log(1024));
@@ -8,11 +20,11 @@ function humanFileSize(size) {
   return (size / Math.pow(1024, i)).toFixed(i ? 2 : 0) + " " + sizes[i];
 }
 
-export default function App() {
-  const [files, setFiles] = useState([]); 
+export default function App(): JSX.Element {
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [dragging, setDragging] = useState(false);
-  const inputRef = useRef(null);
-  const urlsRef = useRef([]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const urlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     return () => {
@@ -21,17 +33,11 @@ export default function App() {
     };
   }, []);
 
-  function genId() {
-    try {
-      return typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    } catch {
-      return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    }
+  function genId(): string {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  function addFiles(list) {
+  function addFiles(list: FileList | null) {
     const arr = Array.from(list || []);
     if (!arr.length) return;
     setFiles((prev) => {
@@ -41,7 +47,7 @@ export default function App() {
           (f) =>
             f.name === file.name &&
             f.size === file.size &&
-            f.lastModified === file.lastModified
+            f.file.lastModified === file.lastModified
         );
         if (exists) continue;
         const url = URL.createObjectURL(file);
@@ -59,34 +65,34 @@ export default function App() {
       }
       return next;
     });
-    if (inputRef.current) inputRef.current.value = null;
+    if (inputRef.current) inputRef.current.value = "";
   }
 
-  function onInputChange(e) {
+  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     addFiles(e.target.files);
   }
 
-  function onDrop(e) {
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
   }
 
-  function onDragOver(e) {
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragging(true);
   }
 
-  function onDragLeave(e) {
+  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragging(false);
   }
 
-  function openFile(item) {
+  function openFile(item: FileItem) {
     window.open(item.url, "_blank", "noopener,noreferrer");
   }
 
-  function downloadFile(item) {
+  function downloadFile(item: FileItem) {
     const a = document.createElement("a");
     a.href = item.url;
     a.download = item.name;
@@ -95,7 +101,7 @@ export default function App() {
     a.remove();
   }
 
-  function removeFile(id) {
+  function removeFile(id: string) {
     setFiles((prev) => {
       const rem = prev.find((p) => p.id === id);
       if (rem) {
@@ -129,13 +135,13 @@ export default function App() {
             File uploader
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Drag & drop multiple files, or click to browse. 
+            Drag & drop multiple files, or click to browse.
           </p>
         </header>
 
         {/* Card */}
         <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-700/50">
-          {/* Drop area */}
+          {/* Drop area (square) */}
           <div
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -143,13 +149,16 @@ export default function App() {
             onClick={() => inputRef.current && inputRef.current.click()}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current && inputRef.current.click(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ")
+                inputRef.current && inputRef.current.click();
+            }}
             className={`mx-auto rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
               dragging
                 ? "border-cyan-400 bg-slate-700/60 shadow-[0_10px_30px_rgba(56,189,248,0.08)] scale-[1.01]"
                 : "border-slate-600 bg-slate-800/40"
             }`}
-            style={{ width: "min(250px, 60vw)", height: "min(250px, 60vw)" }}  // keep it square and responsive
+            style={{ width: "min(300px, 60vw)", height: "min(300px, 60vw)" }}
           >
             <input
               ref={inputRef}
@@ -161,21 +170,46 @@ export default function App() {
 
             <div className="flex flex-col items-center gap-3">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-md">
-                <svg className="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 9l5-5 5 5M12 4v12" />
+                <svg
+                  className="h-7 w-7"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 9l5-5 5 5M12 4v12"
+                  />
                 </svg>
               </div>
 
-              <div className="text-lg md:text-xl font-medium text-slate-100">Drop files here</div>
+              <div className="text-lg md:text-xl font-medium text-slate-100">
+                Drop files here
+              </div>
               <div className="text-sm text-slate-400">or click to browse</div>
 
               <button
                 type="button"
-                onClick={() => inputRef.current && inputRef.current.click()}
+                onClick={() =>
+                  inputRef.current && inputRef.current.click()
+                }
                 className="mt-3 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-purple-500 shadow-lg hover:scale-105 active:scale-95 transition-transform"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 5v14M5 12h14"
+                  />
                 </svg>
                 Choose files
               </button>
@@ -185,7 +219,10 @@ export default function App() {
           {/* Uploaded files list */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Uploaded files <span className="text-sm text-slate-400">({files.length})</span></h2>
+              <h2 className="text-lg font-semibold">
+                Uploaded files{" "}
+                <span className="text-sm text-slate-400">({files.length})</span>
+              </h2>
               <div className="flex items-center gap-3">
                 <button
                   onClick={clearAll}
@@ -198,18 +235,27 @@ export default function App() {
             </div>
 
             {files.length === 0 ? (
-              <div className="text-sm text-slate-400">No files uploaded yet.</div>
+              <div className="text-sm text-slate-400">
+                No files uploaded yet.
+              </div>
             ) : (
               <ul className="flex flex-col gap-3">
                 {files.map((it) => (
-                  <li key={it.id} className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                    {/* thumbnail or extension pill */}
+                  <li
+                    key={it.id}
+                    className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700"
+                  >
                     <div className="flex-shrink-0">
                       {it.isImage ? (
-                        <img src={it.url} alt={it.name} className="h-16 w-16 object-cover rounded-md" />
+                        <img
+                          src={it.url}
+                          alt={it.name}
+                          className="h-16 w-16 object-cover rounded-md"
+                        />
                       ) : (
                         <div className="h-16 w-16 rounded-md bg-slate-700 flex items-center justify-center text-slate-200 font-semibold">
-                          {it.name.split(".").pop()?.slice(0, 4).toUpperCase() || "FILE"}
+                          {it.name.split(".").pop()?.slice(0, 4).toUpperCase() ||
+                            "FILE"}
                         </div>
                       )}
                     </div>
@@ -218,13 +264,30 @@ export default function App() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="truncate">
                           <div className="font-medium">{it.name}</div>
-                          <div className="text-xs text-slate-400">{humanFileSize(it.size)} • {it.type || "unknown"}</div>
+                          <div className="text-xs text-slate-400">
+                            {humanFileSize(it.size)} • {it.type || "unknown"}
+                          </div>
                         </div>
 
                         <div className="flex-shrink-0 flex items-center gap-2">
-                          <button onClick={() => openFile(it)} className="px-3 py-1 text-xs rounded bg-cyan-600 hover:bg-cyan-700">Open</button>
-                          <button onClick={() => downloadFile(it)} className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700">Download</button>
-                          <button onClick={() => removeFile(it.id)} className="px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700">Remove</button>
+                          <button
+                            onClick={() => openFile(it)}
+                            className="px-3 py-1 text-xs rounded bg-cyan-600 hover:bg-cyan-700"
+                          >
+                            Open
+                          </button>
+                          <button
+                            onClick={() => downloadFile(it)}
+                            className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700"
+                          >
+                            Download
+                          </button>
+                          <button
+                            onClick={() => removeFile(it.id)}
+                            className="px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700"
+                          >
+                            Remove
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -233,7 +296,6 @@ export default function App() {
               </ul>
             )}
           </div>
-
         </div>
       </div>
     </div>
