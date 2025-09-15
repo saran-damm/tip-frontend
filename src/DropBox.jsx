@@ -1,18 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
-/* ---- types ---- */
-type FileItem = {
-  id: string;
-  file: File;
-  name: string;
-  size: number;
-  type: string;
-  url: string;
-  isImage: boolean;
-};
-
-/* ---- helpers ---- */
-function humanFileSize(size: number) {
+function humanFileSize(size) {
   if (size === 0) return "0 B";
   if (!size && size !== 0) return "";
   const i = Math.floor(Math.log(size) / Math.log(1024));
@@ -20,32 +8,30 @@ function humanFileSize(size: number) {
   return (size / Math.pow(1024, i)).toFixed(i ? 2 : 0) + " " + sizes[i];
 }
 
-function genId(): string {
-  try {
-    // prefer crypto.randomUUID when available
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = (globalThis as any).crypto;
-    if (c && typeof c.randomUUID === "function") return c.randomUUID();
-  } catch {}
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-/* ---- component ---- */
-export default function App(): JSX.Element {
-  const [files, setFiles] = useState<FileItem[]>([]);
+export default function App() {
+  const [files, setFiles] = useState([]); 
   const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const urlsRef = useRef<string[]>([]);
+  const inputRef = useRef(null);
+  const urlsRef = useRef([]);
 
   useEffect(() => {
     return () => {
-      // cleanup object URLs on unmount
       urlsRef.current.forEach((u) => URL.revokeObjectURL(u));
       urlsRef.current = [];
     };
   }, []);
 
-  function addFiles(list: FileList | null) {
+  function genId() {
+    try {
+      return typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    } catch {
+      return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+  }
+
+  function addFiles(list) {
     const arr = Array.from(list || []);
     if (!arr.length) return;
     setFiles((prev) => {
@@ -55,7 +41,7 @@ export default function App(): JSX.Element {
           (f) =>
             f.name === file.name &&
             f.size === file.size &&
-            f.file.lastModified === file.lastModified
+            f.lastModified === file.lastModified
         );
         if (exists) continue;
         const url = URL.createObjectURL(file);
@@ -73,34 +59,34 @@ export default function App(): JSX.Element {
       }
       return next;
     });
-    if (inputRef.current) inputRef.current.value = "";
+    if (inputRef.current) inputRef.current.value = null;
   }
 
-  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onInputChange(e) {
     addFiles(e.target.files);
   }
 
-  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+  function onDrop(e) {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
   }
 
-  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+  function onDragOver(e) {
     e.preventDefault();
     setDragging(true);
   }
 
-  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
+  function onDragLeave(e) {
     e.preventDefault();
     setDragging(false);
   }
 
-  function openFile(item: FileItem) {
+  function openFile(item) {
     window.open(item.url, "_blank", "noopener,noreferrer");
   }
 
-  function downloadFile(item: FileItem) {
+  function downloadFile(item) {
     const a = document.createElement("a");
     a.href = item.url;
     a.download = item.name;
@@ -109,7 +95,7 @@ export default function App(): JSX.Element {
     a.remove();
   }
 
-  function removeFile(id: string) {
+  function removeFile(id) {
     setFiles((prev) => {
       const rem = prev.find((p) => p.id === id);
       if (rem) {
@@ -142,12 +128,14 @@ export default function App(): JSX.Element {
           <h1 className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-purple-400 to-pink-400">
             File uploader
           </h1>
-          <p className="mt-2 text-sm text-slate-400">Drag &amp; drop multiple files, or click to browse.</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Drag & drop multiple files, or click to browse. 
+          </p>
         </header>
 
         {/* Card */}
         <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-700/50">
-          {/* Drop area (square) */}
+          {/* Drop area */}
           <div
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -155,17 +143,21 @@ export default function App(): JSX.Element {
             onClick={() => inputRef.current && inputRef.current.click()}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") inputRef.current && inputRef.current.click();
-            }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current && inputRef.current.click(); }}
             className={`mx-auto rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
               dragging
                 ? "border-cyan-400 bg-slate-700/60 shadow-[0_10px_30px_rgba(56,189,248,0.08)] scale-[1.01]"
                 : "border-slate-600 bg-slate-800/40"
             }`}
-            style={{ width: "min(300px, 60vw)", height: "min(300px, 60vw)" }}
+            style={{ width: "min(250px, 60vw)", height: "min(250px, 60vw)" }}  // keep it square and responsive
           >
-            <input ref={inputRef} type="file" multiple onChange={onInputChange} className="hidden" />
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              onChange={onInputChange}
+              className="hidden"
+            />
 
             <div className="flex flex-col items-center gap-3">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-md">
