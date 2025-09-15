@@ -1,6 +1,6 @@
-import React, { JSX, useEffect, useRef, useState } from "react";
+import React, { type JSX, useEffect, useRef, useState } from "react";
 
-/* types */
+
 type FileItem = {
   id: string;
   file: File;
@@ -20,7 +20,7 @@ function humanFileSize(size: number) {
   return (size / Math.pow(1024, i)).toFixed(i ? 2 : 0) + " " + sizes[i];
 }
 
-export default function App(): JSX.Element {
+export default function DropBox(): JSX.Element {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -127,7 +127,7 @@ export default function App(): JSX.Element {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100 flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100 p-6">
       <div className="w-full max-w-3xl">
         {/* Header */}
         <header className="text-center mb-8">
@@ -141,25 +141,19 @@ export default function App(): JSX.Element {
 
         {/* Card */}
         <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-700/50">
-          {/* Drop area (square) */}
+          {/* Drop area */}
           <div
             onDrop={onDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
-            onClick={() => inputRef.current && inputRef.current.click()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ")
-                inputRef.current && inputRef.current.click();
-            }}
-            className={`mx-auto rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+            className={`mx-auto rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-default flex flex-col items-center justify-center select-none ${
               dragging
                 ? "border-cyan-400 bg-slate-700/60 shadow-[0_10px_30px_rgba(56,189,248,0.08)] scale-[1.01]"
                 : "border-slate-600 bg-slate-800/40"
             }`}
             style={{ width: "min(300px, 60vw)", height: "min(300px, 60vw)" }}
           >
+            {/* hidden input */}
             <input
               ref={inputRef}
               type="file"
@@ -193,10 +187,8 @@ export default function App(): JSX.Element {
 
               <button
                 type="button"
-                onClick={() =>
-                  inputRef.current && inputRef.current.click()
-                }
-                className="mt-3 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-purple-500 shadow-lg hover:scale-105 active:scale-95 transition-transform"
+                onClick={() => inputRef.current?.click()}
+                className="mt-3 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg hover:scale-105 active:scale-95 transition-transform"
               >
                 <svg
                   className="w-4 h-4"
@@ -227,7 +219,7 @@ export default function App(): JSX.Element {
                 <button
                   onClick={clearAll}
                   disabled={files.length === 0}
-                  className="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-xs px-3 py-1 rounded-full !bg-red-600 hover:!bg-red-700 !text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Clear all
                 </button>
@@ -272,19 +264,19 @@ export default function App(): JSX.Element {
                         <div className="flex-shrink-0 flex items-center gap-2">
                           <button
                             onClick={() => openFile(it)}
-                            className="px-3 py-1 text-xs rounded bg-cyan-600 hover:bg-cyan-700"
+                            className="px-3 py-1 text-xs rounded !bg-cyan-600 hover:!bg-cyan-700 !text-white"
                           >
                             Open
                           </button>
                           <button
                             onClick={() => downloadFile(it)}
-                            className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700"
+                            className="px-3 py-1 text-xs rounded !bg-emerald-600 hover:!bg-emerald-700 !text-white"
                           >
                             Download
                           </button>
                           <button
                             onClick={() => removeFile(it.id)}
-                            className="px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700"
+                            className="px-3 py-1 text-xs rounded !bg-red-600 hover:!bg-red-700 !text-white"
                           >
                             Remove
                           </button>
