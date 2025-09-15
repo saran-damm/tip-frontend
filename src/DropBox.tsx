@@ -1,6 +1,6 @@
 import React, { type JSX, useEffect, useRef, useState } from "react";
 
-
+/* types */
 type FileItem = {
   id: string;
   file: File;
@@ -52,7 +52,8 @@ export default function DropBox(): JSX.Element {
         if (exists) continue;
         const url = URL.createObjectURL(file);
         urlsRef.current.push(url);
-        const isImage = file.type.startsWith("image/");
+        // ensure boolean result (avoid string|boolean)
+        const isImage = !!file.type && file.type.indexOf("image/") === 0;
         next.push({
           id: genId(),
           file,
@@ -103,7 +104,8 @@ export default function DropBox(): JSX.Element {
 
   function removeFile(id: string) {
     setFiles((prev) => {
-      const rem = prev.find((p) => p.id === id);
+      // fallback for .find to avoid older lib issues
+      const rem = prev.filter((p) => p.id === id)[0];
       if (rem) {
         try {
           URL.revokeObjectURL(rem.url);
