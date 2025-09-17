@@ -1,6 +1,5 @@
 import React, { type JSX, useEffect, useRef, useState } from "react";
 
-/* types */
 type FileItem = {
   id: string;
   file: File;
@@ -11,7 +10,6 @@ type FileItem = {
   isImage: boolean;
 };
 
-/* helper to format bytes -> human readable */
 function humanFileSize(size: number) {
   if (size === 0) return "0 B";
   if (!size && size !== 0) return "";
@@ -28,7 +26,11 @@ export default function DropBox(): JSX.Element {
 
   useEffect(() => {
     return () => {
-      urlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      urlsRef.current.forEach((u) => {
+        try {
+          URL.revokeObjectURL(u);
+        } catch {}
+      });
       urlsRef.current = [];
     };
   }, []);
@@ -52,7 +54,6 @@ export default function DropBox(): JSX.Element {
         if (exists) continue;
         const url = URL.createObjectURL(file);
         urlsRef.current.push(url);
-        // ensure boolean result (avoid string|boolean)
         const isImage = !!file.type && file.type.indexOf("image/") === 0;
         next.push({
           id: genId(),
@@ -75,17 +76,21 @@ export default function DropBox(): JSX.Element {
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(false);
     if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
   }
 
   function onDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     setDragging(true);
   }
 
   function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(false);
   }
 
@@ -104,7 +109,6 @@ export default function DropBox(): JSX.Element {
 
   function removeFile(id: string) {
     setFiles((prev) => {
-      // fallback for .find to avoid older lib issues
       const rem = prev.filter((p) => p.id === id)[0];
       if (rem) {
         try {
@@ -129,33 +133,31 @@ export default function DropBox(): JSX.Element {
   }
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100 p-0">
-      <div className="w-full max-w-full px-4 sm:px-6">
-        {/* Header */}
-        <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-purple-400 to-pink-400">
-            File uploader
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Drag & drop multiple files, or click to browse.
-          </p>
-        </header>
+    <div className="min-h-screen w-screen flex flex-col bg-gray-100 text-gray-900">
+      {/* Header same size as chat */}
+      <header className="bg-blue-600 text-white px-6 py-3 shadow-md flex items-center">
+        <span className="text-lg font-semibold">File Uploader</span>
+      </header>
 
-        {/* Card */}
-        <div className="relative w-full bg-slate-800/40 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-slate-700/50">
+      {/* Main */}
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
+        <div className="w-full max-w-3xl bg-white rounded-lg shadow border border-gray-200 p-6">
           {/* Drop area */}
           <div
+            role="button"
+            tabIndex={0}
+            onClick={() => inputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+            }}
             onDrop={onDrop}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
-            className={`mx-auto rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-default flex flex-col items-center justify-center select-none ${
-              dragging
-                ? "border-cyan-400 bg-slate-700/60 shadow-[0_10px_30px_rgba(56,189,248,0.08)] scale-[1.01]"
-                : "border-slate-600 bg-slate-800/40"
+            className={`mx-auto rounded-md border-2 border-dashed p-6 text-center transition-all flex flex-col items-center justify-center cursor-pointer select-none ${
+              dragging ? "border-blue-400 bg-blue-50" : "border-gray-300 bg-gray-50"
             }`}
-            style={{ width: "100%", height: "min(500px, 70vh)" }}
+            style={{ width: "100%", height: "min(400px, 60vh)" }}
           >
-            {/* hidden input */}
             <input
               ref={inputRef}
               type="file"
@@ -165,9 +167,9 @@ export default function DropBox(): JSX.Element {
             />
 
             <div className="flex flex-col items-center gap-3">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+              <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow">
                 <svg
-                  className="h-7 w-7"
+                  className="h-6 w-6"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -182,74 +184,57 @@ export default function DropBox(): JSX.Element {
                 </svg>
               </div>
 
-              <div className="text-lg md:text-xl font-medium text-slate-100">
-                Drop files here
-              </div>
-              <div className="text-sm text-slate-400">or click to browse</div>
+              <div className="text-base font-medium">Drop files here</div>
+              <div className="text-sm text-gray-500">or click to browse</div>
 
               <button
                 type="button"
-                onClick={() => inputRef.current?.click()}
-                className="mt-3 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg hover:scale-105 active:scale-95 transition-transform overflow-hidden"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  inputRef.current?.click();
+                }}
+                className="mt-2 px-4 py-1.5 text-sm font-medium rounded !bg-blue-600 !text-white hover:!bg-blue-700 transition"
               >
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14M5 12h14"
-                  />
-                </svg>
                 Choose files
               </button>
             </div>
           </div>
 
           {/* Uploaded files list */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-base font-semibold">
                 Uploaded files{" "}
-                <span className="text-sm text-slate-400">({files.length})</span>
-              </h2>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={clearAll}
-                  disabled={files.length === 0}
-                  className="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Clear all
-                </button>
-              </div>
+                <span className="text-sm text-gray-500">({files.length})</span>
+              </span>
+              <button
+                onClick={clearAll}
+                disabled={files.length === 0}
+                className="text-xs px-3 py-1 rounded !bg-blue-600 !text-white hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear all
+              </button>
             </div>
 
             {files.length === 0 ? (
-              <div className="text-sm text-slate-400">
-                No files uploaded yet.
-              </div>
+              <div className="text-sm text-gray-500">No files uploaded yet.</div>
             ) : (
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-2">
                 {files.map((it) => (
                   <li
                     key={it.id}
-                    className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700"
+                    className="flex items-center gap-3 bg-white p-3 rounded border border-gray-200"
                   >
                     <div className="flex-shrink-0">
                       {it.isImage ? (
                         <img
                           src={it.url}
                           alt={it.name}
-                          className="h-16 w-16 object-cover rounded-md"
+                          className="h-12 w-12 object-cover rounded"
                         />
                       ) : (
-                        <div className="h-16 w-16 rounded-md bg-slate-700 flex items-center justify-center text-slate-200 font-semibold">
-                          {it.name.split(".").pop()?.slice(0, 4).toUpperCase() ||
-                            "FILE"}
+                        <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center text-gray-700 text-sm font-semibold border border-gray-200">
+                          {it.name.split(".").pop()?.slice(0, 4).toUpperCase() || "FILE"}
                         </div>
                       )}
                     </div>
@@ -257,8 +242,8 @@ export default function DropBox(): JSX.Element {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <div className="truncate">
-                          <div className="font-medium">{it.name}</div>
-                          <div className="text-xs text-slate-400">
+                          <div className="font-medium text-sm">{it.name}</div>
+                          <div className="text-xs text-gray-500">
                             {humanFileSize(it.size)} • {it.type || "unknown"}
                           </div>
                         </div>
@@ -266,19 +251,19 @@ export default function DropBox(): JSX.Element {
                         <div className="flex-shrink-0 flex items-center gap-2">
                           <button
                             onClick={() => openFile(it)}
-                            className="px-3 py-1 text-xs rounded bg-cyan-600 hover:bg-cyan-700 text-white overflow-hidden"
+                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
                           >
                             Open
                           </button>
                           <button
                             onClick={() => downloadFile(it)}
-                            className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700 text-white overflow-hidden"
+                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
                           >
                             Download
                           </button>
                           <button
                             onClick={() => removeFile(it.id)}
-                            className="px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700 text-white overflow-hidden"
+                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
                           >
                             Remove
                           </button>
@@ -291,7 +276,7 @@ export default function DropBox(): JSX.Element {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
