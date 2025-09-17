@@ -1,5 +1,8 @@
 import React, { type JSX, useEffect, useRef, useState } from "react";
 
+// Backend URL
+const BACKEND_URL = "http://localhost:8000";
+
 type FileItem = {
   id: string;
   file: File;
@@ -8,6 +11,9 @@ type FileItem = {
   type: string;
   url: string;
   isImage: boolean;
+  uploaded?: boolean;
+  uploading?: boolean;
+  error?: string;
 };
 
 function humanFileSize(size: number) {
@@ -21,6 +27,8 @@ function humanFileSize(size: number) {
 export default function DropBox(): JSX.Element {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{success: number, failed: number}>({success: 0, failed: 0});
+  const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const urlsRef = useRef<string[]>([]);
 
@@ -130,6 +138,64 @@ export default function DropBox(): JSX.Element {
       urlsRef.current = [];
       return [];
     });
+    setUploadStatus({success: 0, failed: 0});
+  }
+
+  async function uploadFile(item: FileItem) {
+    try {
+      // Update file status to uploading
+      setFiles(prev => prev.map(f => 
+        f.id === item.id ? {...f, uploading: true, error: undefined} : f
+      ));
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', item.file);
+
+      // Send to backend
+      const response = await fetch(`${BACKEND_URL}/upload_pdf/`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Update file status to uploaded
+      setFiles(prev => prev.map(f => 
+        f.id === item.id ? {...f, uploading: false, uploaded: true} : f
+      ));
+      
+      setUploadStatus(prev => ({...prev, success: prev.success + 1}));
+      return result;
+    } catch (error) {
+      console.error('Upload error:', error);
+      // Update file status to error
+      setFiles(prev => prev.map(f => 
+        f.id === item.id ? {...f, uploading: false, error: error instanceof Error ? error.message : 'Upload failed'} : f
+      ));
+      
+      setUploadStatus(prev => ({...prev, failed: prev.failed + 1}));
+      throw error;
+    }
+  }
+
+  async function uploadAllFiles() {
+    setIsUploading(true);
+    setUploadStatus({success: 0, failed: 0});
+    
+    try {
+      const promises = files
+        .filter(f => !f.uploaded && !f.uploading)
+        .map(file => uploadFile(file));
+      
+      await Promise.allSettled(promises);
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
@@ -207,14 +273,33 @@ export default function DropBox(): JSX.Element {
                 Uploaded files{" "}
                 <span className="text-sm text-gray-500">({files.length})</span>
               </span>
-              <button
-                onClick={clearAll}
-                disabled={files.length === 0}
-                className="text-xs px-3 py-1 rounded !bg-blue-600 !text-white hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Clear all
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={uploadAllFiles}
+                  disabled={files.length === 0 || isUploading || files.every(f => f.uploaded)}
+                  className="text-xs px-3 py-1 rounded !bg-green-600 !text-white hover:!bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? 'Uploading...' : 'Upload to Server'}
+                </button>
+                <button
+                  onClick={clearAll}
+                  disabled={files.length === 0}
+                  className="text-xs px-3 py-1 rounded !bg-blue-600 !text-white hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
+            
+            {/* Upload status */}
+            {(uploadStatus.success > 0 || uploadStatus.failed > 0) && (
+              <div className="mb-3 text-sm">
+                <span className="text-green-600">{uploadStatus.success} uploaded successfully</span>
+                {uploadStatus.failed > 0 && (
+                  <span className="text-red-600 ml-3">{uploadStatus.failed} failed</span>
+                )}
+              </div>
+            )}
 
             {files.length === 0 ? (
               <div className="text-sm text-gray-500">No files uploaded yet.</div>
@@ -223,7 +308,7 @@ export default function DropBox(): JSX.Element {
                 {files.map((it) => (
                   <li
                     key={it.id}
-                    className="flex items-center gap-3 bg-white p-3 rounded border border-gray-200"
+                    className={`flex items-center gap-3 bg-white p-3 rounded border ${it.uploaded ? 'border-green-200 bg-green-50' : it.error ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}
                   >
                     <div className="flex-shrink-0">
                       {it.isImage ? (
@@ -245,6 +330,9 @@ export default function DropBox(): JSX.Element {
                           <div className="font-medium text-sm">{it.name}</div>
                           <div className="text-xs text-gray-500">
                             {humanFileSize(it.size)} • {it.type || "unknown"}
+                            {it.uploading && <span className="ml-2 text-blue-500">Uploading...</span>}
+                            {it.uploaded && <span className="ml-2 text-green-500">✓ Uploaded</span>}
+                            {it.error && <span className="ml-2 text-red-500">Error: {it.error}</span>}
                           </div>
                         </div>
 
@@ -261,6 +349,14 @@ export default function DropBox(): JSX.Element {
                           >
                             Download
                           </button>
+                          {!it.uploaded && !it.uploading && (
+                            <button
+                              onClick={() => uploadFile(it)}
+                              className="px-3 py-1 text-xs rounded !bg-green-600 !text-white hover:!bg-green-700"
+                            >
+                              Upload
+                            </button>
+                          )}
                           <button
                             onClick={() => removeFile(it.id)}
                             className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
