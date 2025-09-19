@@ -19,7 +19,7 @@ export default function Card({ title, description, icon, target }: CardProps) {
 
       <button
         onClick={() => navigate(target)}
-        // explicit strong styles so nothing in global CSS turns this white
+        
         className="block mx-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 active:scale-[0.99] focus:ring-4 focus:ring-blue-200 transition"
       >
         Go to {title}
