@@ -1,6 +1,8 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useNavigate } from 'react-router-dom';
 
 const agents = [
   { id: 'agent1', name: 'Agent 1' },
@@ -30,6 +32,7 @@ const ChatScreen: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Start conversation and connect WebSocket when agent changes
   useEffect(() => {
@@ -142,7 +145,10 @@ const ChatScreen: React.FC = () => {
       <div className="w-full h-full flex flex-col overflow-hidden px-4 md:px-16">
         {/* Header */}
         <div className="flex flex-row items-center justify-between h-20 px-0 md:px-4 bg-blue-600 text-white shadow-md z-10">
-          <span className="font-bold text-2xl tracking-tight flex items-center h-full pl-6 md:pl-10">Chat</span>
+          <div className="flex items-center gap-4 pl-6 md:pl-10">
+            <button onClick={() => navigate("/")} className="font-bold text-lg hover:underline">Home</button>
+            <span className="font-bold text-2xl tracking-tight">Chat</span>
+          </div>
           <div className="flex items-center gap-2 pr-6 md:pr-10">
             <label className="font-medium mr-2">Agent:</label>
             <select
@@ -158,6 +164,7 @@ const ChatScreen: React.FC = () => {
             </select>
           </div>
         </div>
+
         {/* Message Feed */}
         <div
           ref={feedRef}
@@ -182,10 +189,10 @@ const ChatScreen: React.FC = () => {
                   style={{ animationDelay: `${idx * 60}ms` }}
                 >
                   {msg.sender === 'agent' ? (
-  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-) : (
-  msg.content
-)}
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
                 </span>
               </div>
             ))
@@ -201,8 +208,8 @@ const ChatScreen: React.FC = () => {
               </span>
             </div>
           )}
-
         </div>
+
         {/* Input Composer */}
         <div className="px-2 md:px-8 py-5 bg-white border-t border-gray-200 flex items-center">
           <div className="flex w-full items-center gap-1">
@@ -229,6 +236,7 @@ const ChatScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
       {/* Animations */}
       <style>{`
         @keyframes fade-in {
