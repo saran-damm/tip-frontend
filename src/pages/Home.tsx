@@ -22,15 +22,14 @@ const ChatIcon = (
 
 export default function Home() {
   return (
-    // full-screen flex center
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="w-full max-w-5xl px-6">
         <h1 className="text-5xl text-center font-extrabold text-slate-800 mb-12">Welcome to the Dashboard</h1>
 
-        {/* Cards centered and limited width */}
         <div className="flex flex-col md:flex-row items-stretch md:items-start gap-8 justify-center">
           <div className="flex-1 flex justify-center">
-            <Card title="File Uploader" description="Upload and manage your files easily." icon={UploadIcon} target="/dropbox" />
+            {/* Updated target -> /file-uploader */}
+            <Card title="File Uploader" description="Upload and manage your files easily." icon={UploadIcon} target="/file-uploader" />
           </div>
           <div className="flex-1 flex justify-center">
             <Card title="Chat" description="Start chatting with your AI assistant." icon={ChatIcon} target="/chat" />
