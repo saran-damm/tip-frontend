@@ -1,4 +1,3 @@
-
 import React, { type JSX, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -142,9 +141,10 @@ export default function DropBox(): JSX.Element {
       {/* Header — matched height with Chat header */}
       <header className="bg-blue-600 text-white flex items-center justify-between h-20 px-6 md:px-8 shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="font-semibold text-lg hover:underline">
+          <button onClick={() => navigate("/home")} className="font-semibold text-lg hover:underline">
             Home
           </button>
+
           <span className="font-semibold text-lg">File Uploader</span>
         </div>
         <div className="text-sm opacity-90">Drag & drop or choose files</div>
