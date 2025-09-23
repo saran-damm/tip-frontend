@@ -146,7 +146,7 @@ const ChatScreen: React.FC = () => {
         {/* Header */}
         <div className="flex flex-row items-center justify-between h-20 px-0 md:px-4 bg-blue-600 text-white shadow-md z-10">
           <div className="flex items-center gap-4 pl-6 md:pl-10">
-            <button onClick={() => navigate("/")} className="font-bold text-lg hover:underline">Home</button>
+            <button onClick={() => navigate("/home")} className="font-bold text-lg hover:underline">Home</button>
             <span className="font-bold text-2xl tracking-tight">Chat</span>
           </div>
           <div className="flex items-center gap-2 pr-6 md:pr-10">
