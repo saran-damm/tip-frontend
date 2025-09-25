@@ -1,5 +1,6 @@
 import React, { useState, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const BACKEND_HOST = "localhost";
 const BACKEND_PORT = 8000;
@@ -20,20 +21,19 @@ export default function Login(): JSX.Element {
       return;
     }
 
-    // ---------- FRONTEND-ONLY TEST MODE ----------
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600)); 
     localStorage.setItem("token", "fake-token");
     setLoading(false);
+
+    toast.success("Login successful!");
     navigate("/home");
     return;
   }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-gray-100">
-      
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-        
         <h1 className="text-xl font-bold mb-1">Welcome</h1>
         <p className="text-sm text-blue-600 mb-6">Please login to continue</p>
 
@@ -58,12 +58,12 @@ export default function Login(): JSX.Element {
         {message && <div className="text-sm text-red-600 mb-3">{message}</div>}
 
         <button
-  onClick={handleLogin}
-  disabled={loading}
-  className="w-full py-2 rounded-xl font-medium hover:opacity-95 transition mb-3 btn-primary"
->
-  {loading ? "Signing in..." : "Sign in"}
-</button>
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full py-2 rounded-xl font-medium hover:opacity-95 transition mb-3 btn-primary"
+        >
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
 
         <div className="text-sm text-center text-gray-600">
           New here?{" "}
