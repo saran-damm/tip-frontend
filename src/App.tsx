@@ -5,6 +5,7 @@ import DropBox from "./DropBox";
 import Home from "./pages/Home";
 import Login from "./Login";
 import Register from "./Register";
+import { Toaster } from "react-hot-toast";  
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/chat" element={<ChatScreen />} />
         <Route path="/file-uploader" element={<DropBox />} />
       </Routes>
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 }
