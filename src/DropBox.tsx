@@ -1,7 +1,8 @@
 import React, { type JSX, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-const BACKEND_URL = "http://localhost:8000";
+import { useParams } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import { BACKEND_HTTP } from "./config";
+import { tenants } from "./tenants";
 
 type FileItem = {
   id: string;
@@ -24,9 +25,13 @@ function humanFileSize(size: number) {
 export default function DropBox(): JSX.Element {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const urlsRef = useRef<string[]>([]);
-  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const tenant = tenants.find(t => t.slug === slug);
+  const tenantId = tenant ? tenant.id : '';
 
   useEffect(() => {
     return () => {
@@ -136,23 +141,100 @@ export default function DropBox(): JSX.Element {
     });
   }
 
-  return (
-    <div className="min-h-screen w-screen flex flex-col bg-gray-100 text-gray-900">
-      {/* Header — matched height with Chat header */}
-      <header className="bg-blue-600 text-white flex items-center justify-between h-20 px-6 md:px-8 shadow-md">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/home")} className="font-semibold text-lg hover:underline">
-            Home
-          </button>
+  async function uploadFiles() {
+    if (files.length === 0) {
+      setUploadError("No files to upload");
+      return;
+    }
 
-          <span className="font-semibold text-lg">File Uploader</span>
+    // Check if all files are PDFs
+    const nonPdfFiles = files.filter(file => file.type !== "application/pdf");
+    if (nonPdfFiles.length > 0) {
+      setUploadError(`Only PDF files are allowed. Please remove: ${nonPdfFiles.map(f => f.name).join(", ")}`);
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      // Upload each PDF file
+      for (const fileItem of files) {
+        const formData = new FormData();
+        formData.append("file", fileItem.file);
+        formData.append("tenant_id", tenantId);
+
+        const response = await fetch(`${BACKEND_HTTP}/api/v1/upload_pdf/`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${fileItem.name}: ${response.statusText}`);
+        }
+      }
+
+      // Clear files after successful upload
+      clearAll();
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadError(error instanceof Error ? error.message : "Failed to upload files");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <Navbar>
+      <div className="h-full w-full flex flex-col bg-blue-50 text-gray-900 overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between h-20 px-6 md:px-8 bg-gradient-to-r from-[#476EAE]/10 to-white border-b border-[#48B3AF]/20">
+          <div className="flex items-center">
+            <div className="mr-3 bg-gradient-to-br from-[#476EAE] to-[#48B3AF] rounded-full p-2 shadow-md">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-white"
+              >
+                <path
+                  d="M12 3v10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8 7l4-4 4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M21 21H3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+            <h3 className="font-bold text-2xl text-[#476EAE]">Train your bot</h3>
+            <p className="text-sm text-[#48B3AF]">Upload documents to enhance your bot's knowledge</p>
+          </div>
         </div>
-        <div className="text-sm opacity-90">Drag & drop or choose files</div>
-      </header>
+        <div className="text-sm font-medium text-[#476EAE] bg-[#476EAE]/10 px-3 py-2 rounded-lg shadow-sm border border-[#48B3AF]/20">
+          Drag & drop or choose files
+        </div>
+      </div>
 
       {/* Main */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
-        <div className="w-full max-w-3xl bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="w-full max-w-3xl bg-white rounded-lg shadow border border-[#48B3AF]/20 p-6">
           {/* Drop area */}
           <div
             role="button"
@@ -165,7 +247,7 @@ export default function DropBox(): JSX.Element {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             className={`mx-auto rounded-md border-2 border-dashed p-6 text-center transition-all flex flex-col items-center justify-center cursor-pointer select-none ${
-              dragging ? "border-blue-400 bg-blue-50" : "border-gray-300 bg-gray-50"
+              dragging ? "border-[#48B3AF] bg-[#476EAE]/10" : "border-gray-300 bg-gray-50"
             }`}
             style={{ width: "100%", height: "min(400px, 60vh)" }}
           >
@@ -173,12 +255,13 @@ export default function DropBox(): JSX.Element {
               ref={inputRef}
               type="file"
               multiple
+              accept="application/pdf,.pdf"
               onChange={onInputChange}
               className="hidden"
             />
 
             <div className="flex flex-col items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#476EAE] to-[#48B3AF] flex items-center justify-center text-white shadow">
                 <svg
                   className="h-6 w-6"
                   xmlns="http://www.w3.org/2000/svg"
@@ -204,7 +287,7 @@ export default function DropBox(): JSX.Element {
                   ev.stopPropagation();
                   inputRef.current?.click();
                 }}
-                className="mt-2 px-4 py-1.5 text-sm font-medium rounded !bg-blue-600 !text-white hover:!bg-blue-700 transition"
+                className="mt-2 px-4 py-1.5 text-sm font-medium rounded bg-gradient-to-r from-[#476EAE] to-[#48B3AF] text-gray-800 hover:opacity-90 transition shadow-sm border border-[#476EAE]/30"
               >
                 Choose files
               </button>
@@ -218,15 +301,27 @@ export default function DropBox(): JSX.Element {
                 Uploaded files{" "}
                 <span className="text-sm text-gray-500">({files.length})</span>
               </span>
-              <button
-                onClick={clearAll}
-                disabled={files.length === 0}
-                className="text-xs px-3 py-1 rounded !bg-blue-600 !text-white hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Clear all
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={uploadFiles}
+                  disabled={files.length === 0 || uploading}
+                  className="text-xs px-3 py-1 rounded bg-gradient-to-r from-[#476EAE] to-[#48B3AF] text-gray-800 font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-[#476EAE]/30"
+                >
+                  {uploading ? "Uploading..." : "Upload"}
+                </button>
+                <button
+                  onClick={clearAll}
+                  disabled={files.length === 0 || uploading}
+                  className="text-xs px-3 py-1 rounded bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-300"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
 
+            {uploadError && (
+              <div className="text-sm text-red-500 mb-3">{uploadError}</div>
+            )}
             {files.length === 0 ? (
               <div className="text-sm text-gray-500">No files uploaded yet.</div>
             ) : (
@@ -262,19 +357,19 @@ export default function DropBox(): JSX.Element {
                         <div className="flex-shrink-0 flex items-center gap-2">
                           <button
                             onClick={() => openFile(it)}
-                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
+                            className="px-3 py-1 text-xs rounded bg-gradient-to-r from-[#476EAE] to-[#48B3AF] text-gray-800 font-medium hover:opacity-90 shadow-sm border border-[#476EAE]/30"
                           >
                             Open
                           </button>
                           <button
                             onClick={() => downloadFile(it)}
-                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
+                            className="px-3 py-1 text-xs rounded bg-gradient-to-r from-[#476EAE] to-[#48B3AF] text-gray-800 font-medium hover:opacity-90 shadow-sm border border-[#476EAE]/30"
                           >
                             Download
                           </button>
                           <button
                             onClick={() => removeFile(it.id)}
-                            className="px-3 py-1 text-xs rounded !bg-blue-600 !text-white hover:!bg-blue-700"
+                            className="px-3 py-1 text-xs rounded bg-gradient-to-r from-[#476EAE] to-[#48B3AF] text-gray-800 font-medium hover:opacity-90 shadow-sm border border-[#476EAE]/30"
                           >
                             Remove
                           </button>
@@ -288,6 +383,7 @@ export default function DropBox(): JSX.Element {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </Navbar>
   );
 }

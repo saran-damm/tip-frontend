@@ -1,10 +1,11 @@
-import React, { useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { tenants } from "./tenants";
 
-const BACKEND_HOST = "localhost";
-const BACKEND_PORT = 8000;
-const BACKEND_HTTP = `http://${BACKEND_HOST}:${BACKEND_PORT}`;
+// const BACKEND_HOST = "localhost";
+// const BACKEND_PORT = 8000;
+// const BACKEND_HTTP = `http://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 export default function Login(): JSX.Element {
   const navigate = useNavigate();
@@ -21,21 +22,30 @@ export default function Login(): JSX.Element {
       return;
     }
 
+    const emailDomain = email.split('@')[1];
+    const tenant = tenants.find(t => emailDomain === `${t.slug}.com`);
+
+    if (!tenant) {
+        setMessage("Invalid login ID");
+        return;
+    }
+
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600)); 
     localStorage.setItem("token", "fake-token");
     setLoading(false);
 
     toast.success("Login successful!");
-    navigate("/home");
+    navigate(`/${tenant.slug}/home`);
     return;
   }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-gray-100">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-        <h1 className="text-xl font-bold mb-1">Welcome</h1>
-        <p className="text-sm text-blue-600 mb-6">Please login to continue</p>
+        <h1 className="text-xl font-bold mb-1 text-black">Welcome - <span className="text-blue-600">TIP.ai</span></h1>
+
+        <p className="text-sm text-black-600 mb-6">Please login to continue</p>
 
         <label className="block text-sm mb-1">Email</label>
         <input

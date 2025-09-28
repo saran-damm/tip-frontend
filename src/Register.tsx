@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
