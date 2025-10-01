@@ -220,7 +220,7 @@ export default function Register(): JSX.Element {
               <button
                 onClick={verifyOtp}
                 disabled={loading}
-                className="flex-1 py-2 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 active:scale-[0.99] transition"
+                className="w-full py-2 rounded-xl font-medium hover:opacity-95 transition mb-3 btn-primary"
               >
                 {loading ? "Verifying..." : "Verify & Finish"}
               </button>
