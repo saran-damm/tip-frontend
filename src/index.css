@@ -1,17 +1,21 @@
 @import "tailwindcss";
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: system-ui,Avenir,Helvetica,Arial,sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  --site-bg: #242424;
+  --site-text: rgba(255,255,255,0.87);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--site-bg);
+  color: var(--site-text);
 }
 
 a {
@@ -19,56 +23,39 @@ a {
   color: #646cff;
   text-decoration: inherit;
 }
-a:hover {
-  color: #535bf2;
-}
+a:hover { color: #535bf2; }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+h1 { font-size: 3.2em; line-height: 1.1; }
 
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  padding: .6em 1.2em;
+  font: 500 1em/1 inherit;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color .25s,transform .08s;
+  background: transparent;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:hover { border-color: #646cff; }
+button:focus { outline: 4px auto -webkit-focus-ring-color; }
+
+.chat-message { white-space: pre-wrap; word-wrap: break-word; }
+
+@media(prefers-color-scheme:light) {
+  :root { --site-bg:#fff; --site-text:#213547; }
+  a:hover { color:#747bff; }
+  button { background: transparent; }
 }
 
-.chat-message {
-  white-space: pre-wrap; /* This ensures that newlines are respected */
-  word-wrap: break-word; /* Avoids breaking words awkwardly */
+.btn-primary {
+  background-color: #2563eb !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  transition: transform .08s,background-color .12s;
 }
+.btn-primary:hover { background-color: #1d4ed8 !important; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity:.6; cursor:not-allowed; transform:none; }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+
+
